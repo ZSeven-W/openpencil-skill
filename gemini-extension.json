@@ -1,0 +1,6 @@
+{
+  "name": "openpencil-skill",
+  "description": "Design skill for OpenPencil — op CLI, batch DSL, MCP tools, and UI best practices",
+  "version": "0.6.0",
+  "contextFileName": "GEMINI.md"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "openpencil-skill",
+  "displayName": "OpenPencil Design",
+  "description": "Design skill for OpenPencil — op CLI, batch DSL, MCP tools, PenNode schema, and UI design best practices",
+  "version": "0.6.0",
+  "author": {
+    "name": "ZSeven-W",
+    "email": "xkayshen@gmail.com"
+  },
+  "homepage": "https://github.com/zseven-w/openpencil-skill",
+  "repository": "https://github.com/zseven-w/openpencil-skill",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "ui",
+    "vector",
+    "openpencil",
+    "cli",
+    "mcp",
+    "dsl"
+  ],
+  "skills": "./skills/"
+}

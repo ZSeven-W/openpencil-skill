@@ -4,27 +4,60 @@ LLM skill for designing with [OpenPencil](https://github.com/ZSeven-W/openpencil
 
 Follows the [agentskills.io](https://agentskills.io/specification) specification.
 
-## Setup
+## Installation
 
-### Claude Code
+> **Note:** Installation differs by platform. Claude Code and Cursor have built-in plugin systems. Codex and OpenCode require manual setup.
 
-Reference in your `CLAUDE.md`:
+### Claude Code (Plugin Marketplace)
 
-```markdown
-See .openpencil-skill/SKILL.md for OpenPencil design guidance.
-```
-
-### Cursor / Windsurf
-
-Add to project rules (`.cursorrules` / `.windsurfrules`):
+Register the marketplace, then install the plugin:
 
 ```
-@openpencil-skill/SKILL.md
+/plugin marketplace add zseven-w/openpencil-skill
+/plugin install openpencil-skill@openpencil-skill
 ```
 
-### Other Agents
+### Cursor
 
-Include `SKILL.md` content in your system prompt or context.
+In Cursor Agent chat:
+
+```
+/add-plugin openpencil-skill
+```
+
+Or search for "openpencil" in the plugin marketplace.
+
+### Codex
+
+Tell Codex:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/zseven-w/openpencil-skill/main/.codex/INSTALL.md
+```
+
+### OpenCode
+
+Tell OpenCode:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/zseven-w/openpencil-skill/main/.opencode/INSTALL.md
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/zseven-w/openpencil-skill
+```
+
+To update:
+
+```bash
+gemini extensions update openpencil-skill
+```
+
+## Verify Installation
+
+Start a new session and ask to design something with OpenPencil (e.g., "design a landing page using op CLI"). The agent should automatically use the skill to generate PenNode JSON via the `op` CLI or MCP tools.
 
 ## What's Included
 

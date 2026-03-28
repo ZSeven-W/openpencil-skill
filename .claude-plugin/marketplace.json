@@ -1,0 +1,20 @@
+{
+  "name": "openpencil-skill",
+  "description": "Design skill for OpenPencil — op CLI, batch DSL, MCP tools, and UI best practices",
+  "owner": {
+    "name": "ZSeven-W",
+    "email": "xkayshen@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "openpencil-skill",
+      "description": "Design skill for OpenPencil — op CLI, batch DSL, MCP tools, PenNode schema, and UI design best practices",
+      "version": "0.6.0",
+      "source": "./",
+      "author": {
+        "name": "ZSeven-W",
+        "email": "xkayshen@gmail.com"
+      }
+    }
+  ]
+}
