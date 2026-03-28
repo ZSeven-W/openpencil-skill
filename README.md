@@ -4,6 +4,16 @@ LLM skill for designing with [OpenPencil](https://github.com/ZSeven-W/openpencil
 
 Follows the [agentskills.io](https://agentskills.io/specification) specification.
 
+## Prerequisites
+
+Install the `op` CLI before using this skill:
+
+```bash
+npm install -g @zseven-w/openpencil
+```
+
+Ensure a running OpenPencil instance (desktop app or web server) for `op` to connect to.
+
 ## Installation
 
 > **Note:** Installation differs by platform. Claude Code and Cursor have built-in plugin systems. Codex and OpenCode require manual setup.
