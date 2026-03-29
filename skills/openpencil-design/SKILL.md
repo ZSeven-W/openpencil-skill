@@ -17,26 +17,49 @@ Generate production-quality vector designs by writing PenNode JSON trees. Use th
 ## Quick Reference — `op` CLI
 
 ```bash
-op start [--desktop|--web]        # Launch app
-op design '<dsl>'                 # Batch design (inline, @file, or stdin)
-op insert '<json>'                # Insert node
-op update <id> '<json>'           # Update node
-op delete <id>                    # Delete node
-op move <id> <parent> [index]     # Move node
-op copy <id> <parent>             # Deep-copy node
-op replace <id> '<json>'          # Replace node
-op get [--depth N]                # Get document tree
-op export <react|html|vue|...>    # Export code
-op page list|add|remove|rename    # Page operations
-op vars / op vars:set '<json>'    # Variables
-op themes / op themes:set '<json>'# Themes
+op start [--desktop|--web]           # Launch app
+op design '<dsl>'                    # Batch design (inline, @file, or stdin)
+op insert '<json>' [--parent P]     # Insert node (--index N, --post-process)
+op update <id> '<json>'              # Update node
+op delete <id>                       # Delete node
+op move <id> <parent> [index]        # Move node
+op copy <id> <parent>                # Deep-copy node
+op replace <id> '<json>'             # Replace node
+op get [--depth N] [--pretty]        # Get document tree
+op export <react|html|vue|...>       # Export code
+op page list|add|remove|rename       # Page operations
+op vars / op vars:set '<json>'       # Variables
+op themes / op themes:set '<json>'   # Themes
+op design:skeleton '<json>'          # Create section structure
+op design:content <id> '<json>'      # Populate section content
+op design:refine --root-id <id>      # Validate + auto-fix (resolves icons)
 ```
 
 Global flags: `--file <path>`, `--page <id>`, `--pretty`. Inputs: inline string, `@filepath`, or `-` (stdin).
 
-## Batch Design DSL
+## Building Designs — Two Approaches
 
-One operation per line. Bind results with `name=` for later reference.
+### Approach 1: `op insert` (Recommended)
+
+The most reliable way to build designs. Use `--parent` to specify the parent node. Capture the returned `nodeId` to reference later. **Always finish with `design:refine`** to resolve icons and validate layout.
+
+```bash
+# Create root frame, capture its ID
+ROOT=$(op insert '{"type":"frame","name":"Page","width":375,"height":812,"layout":"vertical"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['nodeId'])")
+
+# Insert children using --parent
+op insert --parent "$ROOT" '{"type":"text","content":"Hello","fontSize":28,"fontWeight":700}'
+
+# Post-process: resolve icons, validate layout
+op design:refine --root-id "$ROOT"
+```
+
+### Approach 2: Batch Design DSL
+
+One operation per line. Bind results with `name=` for later reference. Best for simple, flat structures.
+
+> **Limitation:** The DSL parser cannot handle deeply nested JSON (e.g., `children` arrays with nested objects, or multiple levels of array nesting). Keep each `I()` call to a **single level of nesting**. For complex nodes with children, use separate `I()` calls for parent and children, or use `op insert --parent`.
 
 ```
 root=I(null, { "type": "frame", "width": 1200, "layout": "vertical" })
@@ -56,6 +79,13 @@ R(old_btn, { "type": "rectangle", "role": "button" })
 | `R` | `name=R(ref, { node })` | Replace |
 | `M` | `M(ref, parent, index?)` | Move |
 | `D` | `D(ref)` | Delete |
+
+**DSL safe pattern** — always insert parent and children separately:
+
+```
+btn=I(form, {"type":"rectangle","role":"button","width":"fill_container","height":50,"cornerRadius":12,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
+I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
+```
 
 ## PenNode Schema
 
@@ -115,6 +145,8 @@ Rich text: `"content": [{ "text": "Bold ", "fontWeight": "bold" }, { "text": "no
 ```
 
 PascalCase + "Icon" suffix. Auto-resolved from Lucide set. Common: `SearchIcon`, `MenuIcon`, `HomeIcon`, `UserIcon`, `SettingsIcon`, `MailIcon`, `HeartIcon`, `StarIcon`, `CheckIcon`, `XIcon`, `ChevronRightIcon`, `ArrowRightIcon`, `ZapIcon`, `ShieldIcon`, `CodeIcon`, `LockIcon`, `SparklesIcon`, `PlayIcon`, `BellIcon`, `EyeIcon`, `DownloadIcon`, `PlusIcon`, `GlobeIcon`, `LayersIcon`.
+
+> **Icon rendering requires post-processing.** After inserting path nodes, you MUST run `op design:refine --root-id <id>` or use `op insert --post-process` to resolve icon names into actual SVG paths. Without this step, icons will exist in the tree but not render visually. Lucide icons use stroke rendering — the engine will clear `fill` and set `stroke` automatically during post-processing.
 
 ### Image
 
@@ -234,109 +266,77 @@ Groups:     24-32px    Sections:   48-80px    Page padding: 80px
 
 Headlines: 2-6 words. Subtitles: max 15 words. Buttons: 1-3 words. No lorem ipsum. No emoji as icons.
 
-## Layered Workflow (MCP)
+## Layered Workflow
 
-For complex multi-section pages:
+For complex multi-section pages, use the three-step skeleton → content → refine flow:
 
-1. **`design_skeleton`** — create section structure, get section IDs + content guidelines
-2. **`design_content`** (per section) — populate with children, `postProcess: true`
-3. **`design_refine`** — full-tree validation, auto-fixes
+| Step | MCP Tool | CLI Equivalent |
+|------|----------|----------------|
+| 1. Create section structure | `design_skeleton` | `op design:skeleton '<json>'` |
+| 2. Populate each section | `design_content` (with `postProcess: true`) | `op design:content <section-id> '<json>'` |
+| 3. Validate + auto-fix | `design_refine` | `op design:refine --root-id <id>` |
+
+`design:refine` resolves icon names → SVG paths, fixes layout issues, and validates the tree. **Always run as the final step.**
 
 ## Common Patterns
 
+Patterns below show `op insert --parent` commands. Each pattern is copy-paste ready.
+
 ### Navbar
 
-```json
-{ "type": "frame", "role": "navbar", "width": "fill_container", "height": 72,
-  "layout": "horizontal", "padding": [0, 80], "justifyContent": "space_between", "alignItems": "center",
-  "fill": [{"type": "solid", "color": "#FFFFFF"}],
-  "stroke": {"thickness": 1, "fill": [{"type": "solid", "color": "#F3F4F6"}]},
-  "children": [
-    {"type": "text", "content": "Brand", "fontSize": 20, "fontWeight": 700, "fontFamily": "Space Grotesk"},
-    {"type": "frame", "role": "nav-links", "layout": "horizontal", "gap": 32, "width": "fit_content", "height": "fit_content", "children": [
-      {"type": "text", "role": "nav-link", "content": "Features", "fontSize": 15},
-      {"type": "text", "role": "nav-link", "content": "Pricing", "fontSize": 15}
-    ]},
-    {"type": "rectangle", "role": "button", "padding": [10, 24], "cornerRadius": 8,
-      "fill": [{"type": "solid", "color": "#111111"}],
-      "children": [{"type": "text", "content": "Get Started", "fontSize": 14, "fontWeight": 600, "fill": [{"type": "solid", "color": "#FFFFFF"}]}]}
-  ]}
+```bash
+NAV=$(op insert --parent "$ROOT" '{"type":"frame","role":"navbar","width":"fill_container","height":72,"layout":"horizontal","padding":[0,80],"justifyContent":"space_between","alignItems":"center","fill":[{"type":"solid","color":"#FFFFFF"}],"stroke":{"thickness":1,"fill":[{"type":"solid","color":"#F3F4F6"}]}}' | ID)
+op insert --parent "$NAV" '{"type":"text","content":"Brand","fontSize":20,"fontWeight":700,"fontFamily":"Space Grotesk"}'
+LINKS=$(op insert --parent "$NAV" '{"type":"frame","role":"nav-links","layout":"horizontal","gap":32,"width":"fit_content","height":"fit_content"}' | ID)
+op insert --parent "$LINKS" '{"type":"text","role":"nav-link","content":"Features","fontSize":15}'
+op insert --parent "$LINKS" '{"type":"text","role":"nav-link","content":"Pricing","fontSize":15}'
+CTA=$(op insert --parent "$NAV" '{"type":"rectangle","role":"button","padding":[10,24],"cornerRadius":8,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"}' | ID)
+op insert --parent "$CTA" '{"type":"text","content":"Get Started","fontSize":14,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]}'
 ```
 
 ### Hero
 
-```json
-{ "type": "frame", "role": "hero", "width": "fill_container", "height": "fit_content",
-  "layout": "vertical", "padding": [100, 80], "gap": 24, "alignItems": "center",
-  "children": [
-    {"type": "text", "role": "heading", "content": "Build something great",
-      "fontSize": 56, "fontWeight": 700, "fontFamily": "Space Grotesk",
-      "textAlign": "center", "letterSpacing": -1.5, "lineHeight": 1.1,
-      "textGrowth": "fixed-width", "width": 800},
-    {"type": "text", "role": "subheading", "content": "The modern platform for teams who ship fast.",
-      "fontSize": 18, "textAlign": "center", "lineHeight": 1.6,
-      "textGrowth": "fixed-width", "width": 560,
-      "fill": [{"type": "solid", "color": "#6B7280"}]},
-    {"type": "frame", "layout": "horizontal", "gap": 12, "width": "fit_content", "height": "fit_content", "children": [
-      {"type": "rectangle", "role": "button", "padding": [14, 32], "cornerRadius": 10,
-        "fill": [{"type": "solid", "color": "#111111"}],
-        "children": [{"type": "text", "content": "Start Free", "fontSize": 16, "fontWeight": 600, "fill": [{"type": "solid", "color": "#FFFFFF"}]}]},
-      {"type": "rectangle", "role": "button", "padding": [14, 32], "cornerRadius": 10,
-        "fill": [{"type": "solid", "color": "#F3F4F6"}],
-        "children": [{"type": "text", "content": "View Demo", "fontSize": 16, "fontWeight": 600}]}
-    ]}
-  ]}
+```bash
+HERO=$(op insert --parent "$ROOT" '{"type":"frame","role":"hero","width":"fill_container","height":"fit_content","layout":"vertical","padding":[100,80],"gap":24,"alignItems":"center"}' | ID)
+op insert --parent "$HERO" '{"type":"text","role":"heading","content":"Build something great","fontSize":56,"fontWeight":700,"fontFamily":"Space Grotesk","textAlign":"center","letterSpacing":-1.5,"lineHeight":1.1,"textGrowth":"fixed-width","width":800}'
+op insert --parent "$HERO" '{"type":"text","role":"subheading","content":"The modern platform for teams who ship fast.","fontSize":18,"textAlign":"center","lineHeight":1.6,"textGrowth":"fixed-width","width":560,"fill":[{"type":"solid","color":"#6B7280"}]}'
+BTNS=$(op insert --parent "$HERO" '{"type":"frame","layout":"horizontal","gap":12,"width":"fit_content","height":"fit_content"}' | ID)
+B1=$(op insert --parent "$BTNS" '{"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"}' | ID)
+op insert --parent "$B1" '{"type":"text","content":"Start Free","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]}'
+B2=$(op insert --parent "$BTNS" '{"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#F3F4F6"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"}' | ID)
+op insert --parent "$B2" '{"type":"text","content":"View Demo","fontSize":16,"fontWeight":600}'
 ```
 
 ### Feature Card (in horizontal grid, ALL cards must use fill_container)
 
-```json
-{ "type": "rectangle", "role": "feature-card",
-  "width": "fill_container", "height": "fill_container",
-  "layout": "vertical", "padding": 28, "gap": 16, "cornerRadius": 16,
-  "fill": [{"type": "solid", "color": "#F9FAFB"}],
-  "children": [
-    {"type": "path", "name": "ZapIcon", "width": 24, "height": 24, "fill": [{"type": "solid", "color": "#111111"}]},
-    {"type": "text", "content": "Lightning Fast", "fontSize": 20, "fontWeight": 600},
-    {"type": "text", "role": "body-text", "content": "Sub-second builds with smart caching.",
-      "fontSize": 15, "lineHeight": 1.6, "fill": [{"type": "solid", "color": "#6B7280"}]}
-  ]}
+```bash
+CARD=$(op insert --parent "$GRID" '{"type":"rectangle","role":"feature-card","width":"fill_container","height":"fill_container","layout":"vertical","padding":28,"gap":16,"cornerRadius":16,"fill":[{"type":"solid","color":"#F9FAFB"}]}' | ID)
+op insert --parent "$CARD" '{"type":"path","name":"ZapIcon","width":24,"height":24,"fill":[{"type":"solid","color":"#111111"}]}'
+op insert --parent "$CARD" '{"type":"text","content":"Lightning Fast","fontSize":20,"fontWeight":600}'
+op insert --parent "$CARD" '{"type":"text","role":"body-text","content":"Sub-second builds with smart caching.","fontSize":15,"lineHeight":1.6,"fill":[{"type":"solid","color":"#6B7280"}]}'
 ```
 
 ### Form Input
 
-```json
-{ "type": "frame", "role": "form-group", "layout": "vertical", "gap": 8, "width": "fill_container",
-  "children": [
-    {"type": "text", "role": "label", "content": "Email", "fontSize": 14, "fontWeight": 500},
-    {"type": "rectangle", "role": "form-input", "width": "fill_container", "height": 48,
-      "cornerRadius": 8, "layout": "horizontal", "padding": [0, 16], "alignItems": "center",
-      "fill": [{"type": "solid", "color": "#FFFFFF"}],
-      "stroke": {"thickness": 1, "fill": [{"type": "solid", "color": "#D1D5DB"}]},
-      "children": [
-        {"type": "path", "name": "MailIcon", "width": 18, "height": 18, "fill": [{"type": "solid", "color": "#9CA3AF"}]},
-        {"type": "text", "content": "you@example.com", "fontSize": 15, "fill": [{"type": "solid", "color": "#9CA3AF"}]}
-      ]}
-  ]}
+```bash
+GRP=$(op insert --parent "$FORM" '{"type":"frame","role":"form-group","layout":"vertical","gap":8,"width":"fill_container"}' | ID)
+op insert --parent "$GRP" '{"type":"text","role":"label","content":"Email","fontSize":14,"fontWeight":500}'
+INP=$(op insert --parent "$GRP" '{"type":"rectangle","role":"form-input","width":"fill_container","height":48,"cornerRadius":10,"layout":"horizontal","padding":[0,16],"gap":10,"alignItems":"center","fill":[{"type":"solid","color":"#F9FAFB"}],"stroke":{"thickness":1,"fill":[{"type":"solid","color":"#E5E7EB"}]}}' | ID)
+op insert --parent "$INP" '{"type":"path","name":"MailIcon","width":18,"height":18,"fill":[{"type":"solid","color":"#9CA3AF"}]}'
+op insert --parent "$INP" '{"type":"text","content":"you@example.com","fontSize":15,"fill":[{"type":"solid","color":"#9CA3AF"}]}'
 ```
 
 ### Footer
 
-```json
-{ "type": "frame", "role": "footer", "width": "fill_container", "height": "fit_content",
-  "layout": "horizontal", "padding": [48, 80], "gap": 80,
-  "fill": [{"type": "solid", "color": "#F9FAFB"}],
-  "children": [
-    {"type": "frame", "layout": "vertical", "gap": 16, "width": 240, "children": [
-      {"type": "text", "content": "Brand", "fontSize": 20, "fontWeight": 700, "fontFamily": "Space Grotesk"},
-      {"type": "text", "content": "Building the future of design.", "fontSize": 14, "lineHeight": 1.6, "fill": [{"type": "solid", "color": "#6B7280"}]}
-    ]},
-    {"type": "frame", "layout": "vertical", "gap": 12, "width": "fit_content", "children": [
-      {"type": "text", "content": "Product", "fontSize": 14, "fontWeight": 600},
-      {"type": "text", "content": "Features", "fontSize": 14, "fill": [{"type": "solid", "color": "#6B7280"}]},
-      {"type": "text", "content": "Pricing", "fontSize": 14, "fill": [{"type": "solid", "color": "#6B7280"}]}
-    ]}
-  ]}
+```bash
+FOOTER=$(op insert --parent "$ROOT" '{"type":"frame","role":"footer","width":"fill_container","height":"fit_content","layout":"horizontal","padding":[48,80],"gap":80,"fill":[{"type":"solid","color":"#F9FAFB"}]}' | ID)
+COL1=$(op insert --parent "$FOOTER" '{"type":"frame","layout":"vertical","gap":16,"width":240}' | ID)
+op insert --parent "$COL1" '{"type":"text","content":"Brand","fontSize":20,"fontWeight":700,"fontFamily":"Space Grotesk"}'
+op insert --parent "$COL1" '{"type":"text","content":"Building the future of design.","fontSize":14,"lineHeight":1.6,"fill":[{"type":"solid","color":"#6B7280"}]}'
+COL2=$(op insert --parent "$FOOTER" '{"type":"frame","layout":"vertical","gap":12,"width":"fit_content"}' | ID)
+op insert --parent "$COL2" '{"type":"text","content":"Product","fontSize":14,"fontWeight":600}'
+op insert --parent "$COL2" '{"type":"text","content":"Features","fontSize":14,"fill":[{"type":"solid","color":"#6B7280"}]}'
+op insert --parent "$COL2" '{"type":"text","content":"Pricing","fontSize":14,"fill":[{"type":"solid","color":"#6B7280"}]}'
 ```
 
 ## Common Mistakes
@@ -353,9 +353,49 @@ For complex multi-section pages:
 | Fixed height on text | Use `textGrowth: "fixed-width"` instead |
 | Space Grotesk for CJK | Use `"Noto Sans SC/JP/KR"` |
 | Negative letterSpacing on CJK | Always 0 for CJK text |
-| Missing `postProcess: true` | Always set for MCP tool calls |
+| Missing post-process after insert | Run `op design:refine --root-id <id>` after building the tree |
+| Icons inserted but not visible | Path nodes need `design:refine` or `--post-process` to resolve SVG |
+| Using DSL `I()` with inline `children` | DSL parser fails on nested JSON — insert parent and children separately |
+| Missing `postProcess: true` in MCP | Always set for MCP tool calls |
 
-## DSL Full Example — Landing Page
+## Full Example — `op insert` Workflow (Recommended)
+
+Build a complete mobile login page using `op insert --parent`. This is the most reliable approach.
+
+```bash
+#!/bin/bash
+set -e
+ID() { python3 -c "import sys,json; print(json.load(sys.stdin)['nodeId'])"; }
+
+# Root frame (mobile)
+ROOT=$(op insert '{"type":"frame","name":"Login","width":375,"height":812,"layout":"vertical","fill":[{"type":"solid","color":"#FFFFFF"}]}' | ID)
+
+# Header
+TOP=$(op insert --parent "$ROOT" '{"type":"frame","width":"fill_container","height":"fit_content","layout":"vertical","padding":[80,32,40,32],"gap":14,"alignItems":"center"}' | ID)
+op insert --parent "$TOP" '{"type":"path","name":"ShieldIcon","width":48,"height":48,"fill":[{"type":"solid","color":"#6366F1"}]}'
+op insert --parent "$TOP" '{"type":"text","content":"Welcome Back","fontSize":28,"fontWeight":700,"fontFamily":"Space Grotesk","letterSpacing":-0.5,"textAlign":"center"}'
+
+# Form
+FORM=$(op insert --parent "$ROOT" '{"type":"frame","width":"fill_container","height":"fit_content","layout":"vertical","padding":[0,32],"gap":20}' | ID)
+
+# Email input
+GRP=$(op insert --parent "$FORM" '{"type":"frame","role":"form-group","layout":"vertical","gap":8,"width":"fill_container"}' | ID)
+op insert --parent "$GRP" '{"type":"text","role":"label","content":"Email","fontSize":14,"fontWeight":500}'
+INP=$(op insert --parent "$GRP" '{"type":"rectangle","role":"form-input","width":"fill_container","height":48,"cornerRadius":10,"layout":"horizontal","padding":[0,16],"gap":10,"alignItems":"center","fill":[{"type":"solid","color":"#F9FAFB"}],"stroke":{"thickness":1,"fill":[{"type":"solid","color":"#E5E7EB"}]}}' | ID)
+op insert --parent "$INP" '{"type":"path","name":"MailIcon","width":18,"height":18,"fill":[{"type":"solid","color":"#9CA3AF"}]}'
+op insert --parent "$INP" '{"type":"text","content":"you@example.com","fontSize":15,"fill":[{"type":"solid","color":"#9CA3AF"}]}'
+
+# Login button
+BTN=$(op insert --parent "$FORM" '{"type":"rectangle","role":"button","width":"fill_container","height":50,"cornerRadius":12,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"}' | ID)
+op insert --parent "$BTN" '{"type":"text","content":"Sign In","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]}'
+
+# IMPORTANT: resolve icons + validate layout
+op design:refine --root-id "$ROOT"
+```
+
+## DSL Example — Landing Page
+
+DSL is suitable for simpler structures. **Avoid inline `children`** — insert parent and children as separate operations.
 
 ```
 root=I(null, {"type":"frame","name":"Landing","width":1200,"height":0,"layout":"vertical","fill":[{"type":"solid","color":"#FFFFFF"}]})
@@ -365,19 +405,25 @@ I(nav, {"type":"text","content":"Acme","fontSize":20,"fontWeight":700,"fontFamil
 links=I(nav, {"type":"frame","role":"nav-links","layout":"horizontal","gap":32,"width":"fit_content","height":"fit_content"})
 I(links, {"type":"text","role":"nav-link","content":"Features","fontSize":15})
 I(links, {"type":"text","role":"nav-link","content":"Pricing","fontSize":15})
-I(nav, {"type":"rectangle","role":"button","padding":[10,24],"cornerRadius":8,"fill":[{"type":"solid","color":"#111111"}],"children":[{"type":"text","content":"Get Started","fontSize":14,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]}]})
+cta=I(nav, {"type":"rectangle","role":"button","padding":[10,24],"cornerRadius":8,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
+I(cta, {"type":"text","content":"Get Started","fontSize":14,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
 
 hero=I(root, {"type":"frame","role":"hero","width":"fill_container","height":"fit_content","layout":"vertical","padding":[100,80],"gap":24,"alignItems":"center"})
 I(hero, {"type":"text","role":"heading","content":"Ship faster with Acme","fontSize":56,"fontWeight":700,"fontFamily":"Space Grotesk","textAlign":"center","letterSpacing":-1.5,"lineHeight":1.1,"textGrowth":"fixed-width","width":800})
-I(hero, {"type":"text","role":"subheading","content":"The platform that turns ideas into production apps in minutes.","fontSize":18,"textAlign":"center","lineHeight":1.6,"textGrowth":"fixed-width","width":560,"fill":[{"type":"solid","color":"#6B7280"}]})
+I(hero, {"type":"text","role":"subheading","content":"Turn ideas into production apps in minutes.","fontSize":18,"textAlign":"center","lineHeight":1.6,"textGrowth":"fixed-width","width":560,"fill":[{"type":"solid","color":"#6B7280"}]})
 btns=I(hero, {"type":"frame","layout":"horizontal","gap":12,"width":"fit_content","height":"fit_content"})
-I(btns, {"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#111111"}],"children":[{"type":"text","content":"Start Free","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]}]})
-I(btns, {"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#F3F4F6"}],"children":[{"type":"text","content":"View Demo","fontSize":16,"fontWeight":600}]})
+b1=I(btns, {"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
+I(b1, {"type":"text","content":"Start Free","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
+b2=I(btns, {"type":"rectangle","role":"button","padding":[14,32],"cornerRadius":10,"fill":[{"type":"solid","color":"#F3F4F6"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
+I(b2, {"type":"text","content":"View Demo","fontSize":16,"fontWeight":600})
 
 feat=I(root, {"type":"frame","role":"section","width":"fill_container","height":"fit_content","layout":"vertical","padding":[80,80],"gap":48,"alignItems":"center"})
 I(feat, {"type":"text","role":"heading","content":"Everything you need","fontSize":36,"fontWeight":700,"fontFamily":"Space Grotesk","textAlign":"center","letterSpacing":-0.5})
 grid=I(feat, {"type":"frame","role":"feature-grid","width":"fill_container","layout":"horizontal","gap":24})
-c1=I(grid, {"type":"rectangle","role":"feature-card","width":"fill_container","height":"fill_container","layout":"vertical","padding":28,"gap":16,"cornerRadius":16,"fill":[{"type":"solid","color":"#F9FAFB"}],"children":[{"type":"path","name":"ZapIcon","width":24,"height":24,"fill":[{"type":"solid","color":"#111111"}]},{"type":"text","content":"Lightning Fast","fontSize":20,"fontWeight":600},{"type":"text","role":"body-text","content":"Sub-second builds with smart caching.","fontSize":15,"lineHeight":1.6,"fill":[{"type":"solid","color":"#6B7280"}]}]})
+c1=I(grid, {"type":"rectangle","role":"feature-card","width":"fill_container","height":"fill_container","layout":"vertical","padding":28,"gap":16,"cornerRadius":16,"fill":[{"type":"solid","color":"#F9FAFB"}]})
+I(c1, {"type":"path","name":"ZapIcon","width":24,"height":24,"fill":[{"type":"solid","color":"#111111"}]})
+I(c1, {"type":"text","content":"Lightning Fast","fontSize":20,"fontWeight":600})
+I(c1, {"type":"text","role":"body-text","content":"Sub-second builds with smart caching.","fontSize":15,"lineHeight":1.6,"fill":[{"type":"solid","color":"#6B7280"}]})
 c2=C(c1, grid, {})
 U(c2+"/0", {"name":"ShieldIcon"})
 U(c2+"/1", {"content":"Enterprise Security"})
