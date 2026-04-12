@@ -26,10 +26,21 @@ op move <id> <parent> [index]        # Move node
 op copy <id> <parent>                # Deep-copy node
 op replace <id> '<json>'             # Replace node
 op get [--depth N] [--pretty]        # Get document tree
+op read-nodes [id...] [--depth N] [--vars]  # Read node subtree(s) with optional variable resolution
 op export <react|html|vue|...>       # Export code
-op page list|add|remove|rename       # Page operations
+op page list                         # List all pages
+op page add [--name N]               # Add a new page
+op page remove <id>                  # Remove a page
+op page rename <id> '<name>'         # Rename a page
 op vars / op vars:set '<json>'       # Variables
 op themes / op themes:set '<json>'   # Themes
+op theme:save '<json>'               # Save current theme as preset
+op theme:load '<name>'               # Load a saved theme preset
+op theme:list                        # List available theme presets
+op codegen:plan '<json>'             # Submit codegen plan (framework, rootIds, options)
+op codegen:submit '<json>'           # Submit a code chunk for a node
+op codegen:assemble [--framework F]  # Assemble all submitted chunks into final output
+op codegen:clean                     # Clear codegen state
 op design:skeleton '<json>'          # Create section structure
 op design:content <id> '<json>'      # Populate section content
 op design:refine --root-id <id>      # Validate + auto-fix (resolves icons)
@@ -277,6 +288,40 @@ For complex multi-section pages, use the three-step skeleton → content → ref
 | 3. Validate + auto-fix | `design_refine` | `op design:refine --root-id <id>` |
 
 `design:refine` resolves icon names → SVG paths, fixes layout issues, and validates the tree. **Always run as the final step.**
+
+## Codegen Pipeline
+
+For incremental, framework-aware code generation from the design tree:
+
+| Step | CLI Command | MCP Tool | Description |
+|------|------------|----------|-------------|
+| 1. Plan | `op codegen:plan '<json>'` | `codegen_plan` | Declare framework, root node IDs, and options |
+| 2. Submit | `op codegen:submit '<json>'` | `codegen_submit_chunk` | Submit generated code for individual nodes |
+| 3. Assemble | `op codegen:assemble --framework react` | `codegen_assemble` | Combine all chunks into the final output |
+| 4. Clean | `op codegen:clean` | `codegen_clean` | Clear server-side codegen state |
+
+The plan JSON shape:
+```json
+{ "framework": "react", "rootIds": ["frame-1"], "options": { "tailwind": true } }
+```
+
+The submit JSON shape:
+```json
+{ "nodeId": "card-1", "code": "<Card className=\"...\">...</Card>", "imports": ["Card"] }
+```
+
+Supported frameworks: `react`, `html`, `vue`, `svelte`, `flutter`, `swiftui`, `compose`, `rn` (React Native), `css`.
+
+## Multi-Page Documents
+
+```bash
+op page list                          # List all pages with IDs
+op page add --name "Settings"         # Add a new page
+op page remove <page-id>              # Remove a page
+op page rename <page-id> 'New Name'   # Rename a page
+```
+
+Use `--page <id>` on any command to target a specific page. Without it, commands operate on the first page.
 
 ## Common Patterns
 
