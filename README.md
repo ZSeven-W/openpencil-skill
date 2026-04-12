@@ -75,13 +75,15 @@ Start a new session and ask to design something with OpenPencil (e.g., "design a
 
 ## What's Included
 
-- `op` CLI command reference
+- `op` CLI command reference (app control, document ops, nodes, import, layout, pages, variables, codegen)
 - Batch Design DSL syntax with full landing page example
-- PenNode schema — all node types, properties, fills
+- PenNode schema — all node types (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), properties, fills
 - 40+ semantic roles with smart defaults
 - Design principles — typography, color, spacing, shadows
 - Layout engine rules and sizing decisions
 - Layered MCP workflow (skeleton → content → refine)
+- Codegen pipeline (plan → submit → assemble → clean)
+- Import support (SVG, Figma .fig files)
 - Common patterns — navbar, hero, cards, forms, footer
 - Common mistakes table
 

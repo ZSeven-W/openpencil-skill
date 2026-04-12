@@ -24,7 +24,7 @@ To pin a specific version:
 
 ```json
 {
-  "plugin": ["openpencil-skill@git+https://github.com/zseven-w/openpencil-skill.git#v0.6.0"]
+  "plugin": ["openpencil-skill@git+https://github.com/zseven-w/openpencil-skill.git#v0.7.0"]
 }
 ```
 

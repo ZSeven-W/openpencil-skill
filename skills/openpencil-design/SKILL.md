@@ -17,33 +17,60 @@ Generate production-quality vector designs by writing PenNode JSON trees. Use th
 ## Quick Reference — `op` CLI
 
 ```bash
+# App control
 op start [--desktop|--web]           # Launch app
-op design '<dsl>'                    # Batch design (inline, @file, or stdin)
+op stop                              # Stop running instance
+op status                            # Check if running
+
+# Document
+op open [file.op]                    # Open file or connect to live canvas
+op save <file.op>                    # Save current document
+op get [--depth N] [--pretty]        # Get document tree
+op selection [--depth N]             # Get current canvas selection
+op read-nodes [id...] [--depth N] [--vars]  # Read node subtree(s) with optional variable resolution
+op layout [--parent P] [--depth N]   # Snapshot layout tree with computed positions
+op find-space [--direction D] [--width N] [--height N]  # Find empty space on canvas
+
+# Node operations
 op insert '<json>' [--parent P]     # Insert node (--index N, --post-process)
 op update <id> '<json>'              # Update node
 op delete <id>                       # Delete node
 op move <id> <parent> [index]        # Move node
 op copy <id> <parent>                # Deep-copy node
 op replace <id> '<json>'             # Replace node
-op get [--depth N] [--pretty]        # Get document tree
-op read-nodes [id...] [--depth N] [--vars]  # Read node subtree(s) with optional variable resolution
-op export <react|html|vue|...>       # Export code
+
+# Batch design
+op design '<dsl>'                    # Batch design DSL (inline, @file, or stdin) [--canvas-width N]
+
+# Layered workflow
+op design:skeleton '<json>'          # Create section structure
+op design:content <id> '<json>'      # Populate section content
+op design:refine --root-id <id>      # Validate + auto-fix (resolves icons) [--canvas-width N]
+
+# Import
+op import:svg <file.svg> [--parent P]       # Import SVG as editable nodes
+op import:figma <file.fig> [--out out.op]   # Convert Figma .fig to .op document
+
+# Pages
 op page list                         # List all pages
 op page add [--name N]               # Add a new page
 op page remove <id>                  # Remove a page
 op page rename <id> '<name>'         # Rename a page
-op vars / op vars:set '<json>'       # Variables
-op themes / op themes:set '<json>'   # Themes
-op theme:save '<json>'               # Save current theme as preset
-op theme:load '<name>'               # Load a saved theme preset
-op theme:list                        # List available theme presets
+op page reorder <id> <index>         # Move page to position
+op page duplicate <id>               # Clone page with new IDs
+
+# Variables & Themes
+op vars / op vars:set '<json>'       # Variables (--replace to replace all)
+op themes / op themes:set '<json>'   # Themes (--replace to replace all)
+op theme:save <file.optheme>         # Save current theme as preset file
+op theme:load <file.optheme>         # Load a theme preset file
+op theme:list <directory>            # List .optheme presets in directory
+
+# Codegen pipeline
 op codegen:plan '<json>'             # Submit codegen plan (framework, rootIds, options)
 op codegen:submit '<json>'           # Submit a code chunk for a node
 op codegen:assemble [--framework F]  # Assemble all submitted chunks into final output
 op codegen:clean                     # Clear codegen state
-op design:skeleton '<json>'          # Create section structure
-op design:content <id> '<json>'      # Populate section content
-op design:refine --root-id <id>      # Validate + auto-fix (resolves icons)
 ```
 
 Global flags: `--file <path>`, `--page <id>`, `--pretty`. Inputs: inline string, `@filepath`, or `-` (stdin).
@@ -90,6 +117,7 @@ R(old_btn, { "type": "rectangle", "role": "button" })
 | `R` | `name=R(ref, { node })` | Replace |
 | `M` | `M(ref, parent, index?)` | Move |
 | `D` | `D(ref)` | Delete |
+| `G` | `name=G(parent, "search", "query")` | Generate image via search |
 
 **DSL safe pattern** — always insert parent and children separately:
 
@@ -104,7 +132,7 @@ I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[
 
 ```json
 {
-  "type": "frame|rectangle|text|ellipse|line|polygon|path|image|group",
+  "type": "frame|rectangle|text|ellipse|line|polygon|path|image|icon_font|group|ref",
   "name": "Display Name",
   "role": "semantic-role",
   "x": 0, "y": 0,
@@ -126,7 +154,7 @@ I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[
   "clipContent": true,
   "cornerRadius": 12,        // number | [tl, tr, br, bl]
   "fill": [{ "type": "solid", "color": "#FFFFFF" }],
-  "stroke": { "thickness": 1, "fill": [{ "type": "solid", "color": "#E5E7EB" }] },
+  "stroke": { "thickness": 1, "fill": [{ "type": "solid", "color": "#E5E7EB" }], "align": "inside", "dashPattern": [5, 3] },
   "effects": [{ "type": "shadow", "offsetX": 0, "offsetY": 4, "blur": 12, "spread": 0, "color": "rgba(0,0,0,0.08)" }],
   "children": []
 }
@@ -162,7 +190,32 @@ PascalCase + "Icon" suffix. Auto-resolved from Lucide set. Common: `SearchIcon`,
 ### Image
 
 ```json
-{ "type": "image", "src": "https://example.com/photo.jpg", "width": 400, "height": 300 }
+{ "type": "image", "src": "https://example.com/photo.jpg", "width": 400, "height": 300,
+  "objectFit": "crop", "cornerRadius": 12 }
+```
+
+AI image placeholders (resolved by `design:refine`):
+
+```json
+{ "type": "image", "width": 400, "height": 300,
+  "imagePrompt": "A modern office workspace with natural light",
+  "imageSearchQuery": "modern office workspace" }
+```
+
+Image adjustments (all -100 to 100): `exposure`, `contrast`, `saturation`, `temperature`, `tint`, `highlights`, `shadows`.
+
+### Polygon
+
+```json
+{ "type": "polygon", "polygonCount": 6, "width": 80, "height": 80, "cornerRadius": 4,
+  "fill": [{ "type": "solid", "color": "#6366F1" }] }
+```
+
+### Icon Font
+
+```json
+{ "type": "icon_font", "iconFontName": "lucide:home", "width": 24, "height": 24,
+  "fill": [{ "type": "solid", "color": "#111111" }] }
 ```
 
 ### Line
@@ -180,7 +233,19 @@ PascalCase + "Icon" suffix. Auto-resolved from Lucide set. Common: `SearchIcon`,
   "stops": [{ "offset": 0, "color": "#6366F1" }, { "offset": 1, "color": "#8B5CF6" }] }
 { "type": "radial_gradient", "cx": 0.5, "cy": 0.5, "radius": 0.5,
   "stops": [{ "offset": 0, "color": "#FFF" }, { "offset": 1, "color": "#000" }] }
+{ "type": "image", "url": "https://example.com/texture.jpg", "mode": "fill" }
 ```
+
+Image fill modes: `fill`, `fit`, `crop`, `tile`, `stretch`. Image fill also supports adjustment filters (`exposure`, `contrast`, `saturation`, etc.).
+
+### Ref Node (Component Instance)
+
+```json
+{ "type": "ref", "ref": "reusable-frame-id",
+  "descendants": { "child-id": { "content": "Override text" } } }
+```
+
+References a `frame` with `reusable: true`. Override specific descendant properties via `descendants`.
 
 ### Design Variables
 
@@ -319,6 +384,8 @@ op page list                          # List all pages with IDs
 op page add --name "Settings"         # Add a new page
 op page remove <page-id>              # Remove a page
 op page rename <page-id> 'New Name'   # Rename a page
+op page reorder <page-id> 2           # Move page to index 2
+op page duplicate <page-id>           # Clone page with new IDs
 ```
 
 Use `--page <id>` on any command to target a specific page. Without it, commands operate on the first page.

@@ -53,13 +53,15 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 
 ## Conteudo incluido
 
-- Referencia de comandos CLI `op`
+- Referencia de comandos CLI `op` (app control, document ops, nodes, import, layout, pages, variables, codegen)
 - Sintaxe DSL de design em lote com exemplo completo de landing page
-- Schema PenNode — todos os tipos de no, propriedades, preenchimentos
+- Schema PenNode — todos os tipos de no (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), propriedades, preenchimentos
 - 40+ roles semanticos com valores padrao inteligentes
 - Principios de design — tipografia, cor, espacamento, sombras
 - Regras do motor de layout e dimensionamento
 - Fluxo de trabalho MCP em camadas (skeleton → content → refine)
+- Pipeline de geracao de codigo (plan → submit → assemble → clean)
+- Suporte a importacao (SVG, arquivos Figma .fig)
 - Padroes comuns — barra de navegacao, hero, cards, formularios, rodape
 - Tabela de erros comuns
 
