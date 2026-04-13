@@ -126,6 +126,21 @@ btn=I(form, {"type":"rectangle","role":"button","width":"fill_container","height
 I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
 ```
 
+## STRICT JSON Rules
+
+When emitting PenNode JSON (via `op insert`, `op design`, `batch_design`, `insert_node`), you MUST produce strictly valid JSON. Common mistakes that break parsing:
+
+- **Every property MUST have both a key and a value**. NEVER emit `": 50` or `: 50` without a key name. This often happens when you truncate/reformat — double-check.
+- **Every key MUST be a double-quoted non-empty string.**
+- **`fill` is ALWAYS an array**: `"fill": [{"type": "solid", "color": "#hex"}]`. Shorthand like `"fill": "#hex"` works but the array form is the canonical shape.
+- **`stroke` is an object with a `fill` array**: `"stroke": {"thickness": 1, "fill": [{"type": "solid", "color": "#hex"}]}`. NEVER `"stroke": {"thickness": 1, "color": "#hex"}` or `"stroke": "#hex"` (parser auto-converts these but the correct shape is preferred).
+- **NO trailing commas** before `}` or `]`.
+- **NO comments** inside JSON (`//` or `/* */`).
+- Use **straight double quotes** `"`, not smart/curly quotes.
+- **`content` for text, NOT `text`**: `{"type": "text", "content": "Hello"}`.
+- **`iconFontName` for icons, NOT `iconName` or `icon`**: `{"type": "icon_font", "iconFontName": "lock"}`.
+- Before finalizing the JSON, mentally verify: every key has a value, every value has a key, all brackets balance.
+
 ## PenNode Schema
 
 ### Common Properties
@@ -176,16 +191,30 @@ I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[
 
 Rich text: `"content": [{ "text": "Bold ", "fontWeight": "bold" }, { "text": "normal" }]`
 
-### Path (Icons)
+### Icons — Two Options
+
+#### Option A: `icon_font` (RECOMMENDED — renders directly, no post-processing needed)
+
+```json
+{ "type": "icon_font", "name": "Lock Icon", "iconFontName": "lock",
+  "width": 20, "height": 20,
+  "fill": [{ "type": "solid", "color": "#6B7280" }] }
+```
+
+**Field is `iconFontName` (NOT `iconName`, NOT `icon`).** Values are lowercase kebab-case Lucide names: `mail`, `lock`, `eye`, `eye-off`, `chrome`, `apple`, `message-circle`, `x`, `arrow-right`, `search`, `heart`, `star`, `check`, `plus`, `bell`, `home`, `user`, `settings`, `chevron-right`, `download`, `globe`, `layers`, `zap`, `shield`, `play`.
+
+Works in ALL contexts: CLI, MCP tools, or direct `.op` files — no `design:refine` required.
+
+#### Option B: `path` (requires post-processing)
 
 ```json
 { "type": "path", "name": "HeartIcon", "width": 24, "height": 24,
   "fill": [{ "type": "solid", "color": "#111111" }] }
 ```
 
-PascalCase + "Icon" suffix. Auto-resolved from Lucide set. Common: `SearchIcon`, `MenuIcon`, `HomeIcon`, `UserIcon`, `SettingsIcon`, `MailIcon`, `HeartIcon`, `StarIcon`, `CheckIcon`, `XIcon`, `ChevronRightIcon`, `ArrowRightIcon`, `ZapIcon`, `ShieldIcon`, `CodeIcon`, `LockIcon`, `SparklesIcon`, `PlayIcon`, `BellIcon`, `EyeIcon`, `DownloadIcon`, `PlusIcon`, `GlobeIcon`, `LayersIcon`.
+PascalCase + "Icon" suffix. Auto-resolved from Lucide set during post-processing.
 
-> **Icon rendering requires post-processing.** After inserting path nodes, you MUST run `op design:refine --root-id <id>` or use `op insert --post-process` to resolve icon names into actual SVG paths. Without this step, icons will exist in the tree but not render visually. Lucide icons use stroke rendering — the engine will clear `fill` and set `stroke` automatically during post-processing.
+> **Path icons need post-processing.** After inserting path nodes, run `op design:refine --root-id <id>` or use `op insert --post-process`. Without this, path icons won't render visually. The standalone MCP server (used by ACP agents) does NOT have hook implementations registered, so path icons will NOT resolve there — **prefer `icon_font` in MCP contexts.**
 
 ### Image
 
