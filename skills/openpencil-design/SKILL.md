@@ -1,6 +1,6 @@
 ---
 name: openpencil-design
-description: Use when designing UI with OpenPencil — creating layouts via op CLI, batch design DSL, or MCP tools. Covers PenNode schema, semantic roles, typography, color, spacing, and common component patterns.
+description: Use when designing UI with OpenPencil — creating layouts via op CLI, batch design DSL, sandboxed JS scripts, or MCP tools. Covers PenNode schema, semantic roles, typography, color, spacing, and common component patterns.
 ---
 
 # OpenPencil Design
@@ -41,6 +41,8 @@ op replace <id> '<json>'             # Replace node
 
 # Batch design
 op design '<dsl>'                    # Batch design DSL (inline, @file, or stdin) [--canvas-width N]
+op design @ui.js                     # Sandboxed JS script: I(parent, obj) + loops (.js/.mjs implies --script)
+op design '<js>' --script            # Same, inline/stdin (flag must FOLLOW the payload)
 
 # Layered workflow
 op design:skeleton '<json>'          # Create section structure
@@ -75,7 +77,7 @@ op codegen:clean                     # Clear codegen state
 
 Global flags: `--file <path>`, `--page <id>`, `--pretty`. Inputs: inline string, `@filepath`, or `-` (stdin).
 
-## Building Designs — Two Approaches
+## Building Designs — Three Approaches
 
 ### Approach 1: `op insert` (Recommended)
 
@@ -125,6 +127,50 @@ R(old_btn, { "type": "rectangle", "role": "button" })
 btn=I(form, {"type":"rectangle","role":"button","width":"fill_container","height":50,"cornerRadius":12,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
 I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
 ```
+
+### Approach 3: Script mode (loops & data-driven — RECOMMENDED for repeated structures)
+
+```
+op design @ui.js                 # .js / .mjs file implies script mode
+op design '<js code>' --script   # inline or stdin; --script must FOLLOW the payload
+```
+
+Via MCP: call `batch_design` with the `script` argument (exactly ONE of `nodes_json` | `operations` | `script` per call). This is the SAME protocol OpenPencil's internal design agents use; follow the same contract:
+
+Write a JavaScript program (no prose, no markdown fences) that builds the design by calling the global function I(parent, node):
+
+```
+const id = I(parent, { ...node... });   // inserts node, RETURNS its id (a string)
+```
+
+`parent` is null for a root frame, otherwise an id returned by an EARLIER I(...) call. A node is a child of X only if you call I(X, {...}).
+
+I(...) is the ONLY function available — there is no console, and no other builder. Do not call console.log or any helper; just call I(...). Script mode is insert-only; use the DSL ops (Approach 2) for update/move/delete.
+
+USE REAL JAVASCRIPT — const/let, arrays of data, and for...of / .forEach loops — to generate repeated structure (table rows, nav items, cards, list items) by looping over a data array. PREFER a loop over copy-pasting near-identical I(...) calls.
+
+Each node object starts with type ("frame"/"text"/"rectangle"/"ellipse"/"path"/"icon_font") and uses camelCase props (cornerRadius, fontSize, fontWeight, justifyContent, alignItems, clipContent). Do NOT set x/y on children inside layout frames.
+
+Example:
+
+```js
+const sec = I(null, {type:"frame", name:"Clients", layout:"vertical", width:"fill_container", gap:0});
+const tbl = I(sec, {type:"frame", layout:"vertical", width:"fill_container"});
+const rows = [{name:"Alice Chen", status:"Active"}, {name:"Bob Ito", status:"VIP"}];
+for (const r of rows) {
+  const row = I(tbl, {type:"frame", layout:"horizontal", width:"fill_container", padding:[12,16]});
+  const c1 = I(row, {type:"frame", width:"fill_container"}); I(c1, {type:"text", content:r.name});
+  const c2 = I(row, {type:"frame", width:"fill_container"}); I(c2, {type:"text", content:r.status});
+}
+```
+
+Generate EVERY row/card/item with realistic values. Output ONLY the JavaScript program.
+
+CLI/MCP notes:
+
+- **Nested `children` arrays are SAFE here** — the engine serializes each object to perfect single-line JSON, so the DSL's single-level-of-nesting limitation does not apply. Prefer separate `I()` calls anyway when you need the parent binding.
+- **Node ids are remapped on insert** — do not reference an authored `"id"` after the call; only the returned binding is meaningful, and only inside this script.
+- **Limits:** 256 KiB source, 4096 inserts, 8 MiB recorded output, 2 s CPU, 64 MiB memory. A script truncated mid-statement is best-effort repaired (the complete prefix still runs).
 
 ## STRICT JSON Rules
 
