@@ -13,7 +13,13 @@ LLM-навык для дизайна с [OpenPencil](https://github.com/ZSeven-W
 Установите CLI `op` перед использованием этого навыка:
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# Или в macOS / Linux:
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 Убедитесь, что экземпляр OpenPencil (десктопное приложение или веб-сервер) запущен.
@@ -54,8 +60,8 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 ## Содержание
 
 - Справочник команд CLI `op` (app control, document ops, nodes, import, layout, pages, variables, codegen)
-- Синтаксис пакетного DSL дизайна с полным примером лендинга
-- Схема PenNode — все типы узлов (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), свойства, заливки
+- Пакетный DSL дизайна и изолированный режим JavaScript с полными примерами
+- Схема PenNode — все типы узлов v0.8.0, включая интерактивные виджеты, свойства и заливки
 - 40+ семантических ролей с умными значениями по умолчанию
 - Принципы дизайна — типографика, цвет, отступы, тени
 - Правила движка компоновки и определение размеров

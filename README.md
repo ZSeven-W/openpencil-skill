@@ -13,14 +13,20 @@ Follows the [agentskills.io](https://agentskills.io/specification) specification
 Install the `op` CLI before using this skill:
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# Or on macOS / Linux:
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 Ensure a running OpenPencil instance (desktop app or web server) for `op` to connect to.
 
 ## Installation
 
-> **Note:** Installation differs by platform. Claude Code and Cursor have built-in plugin systems. Codex and OpenCode require manual setup.
+> **Note:** Installation differs by platform. Use the matching integration below.
 
 ### Claude Code (Plugin Marketplace)
 
@@ -76,8 +82,8 @@ Start a new session and ask to design something with OpenPencil (e.g., "design a
 ## What's Included
 
 - `op` CLI command reference (app control, document ops, nodes, import, layout, pages, variables, codegen)
-- Batch Design DSL syntax with full landing page example
-- PenNode schema — all node types (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), properties, fills
+- Batch Design DSL and sandboxed JavaScript mode with full examples
+- PenNode schema — all v0.8.0 node types, including interactive widgets, properties, and fills
 - 40+ semantic roles with smart defaults
 - Design principles — typography, color, spacing, shadows
 - Layout engine rules and sizing decisions

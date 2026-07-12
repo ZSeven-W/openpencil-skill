@@ -13,14 +13,20 @@
 使用前需先安裝 `op` CLI：
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# 或在 macOS / Linux：
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 確保有一個正在運行的 OpenPencil 實例（桌面應用或 Web 伺服器）供 `op` 連接。
 
 ## 安裝
 
-> **注意：** 各平台安裝方式不同。Claude Code 和 Cursor 有內建插件系統，Codex 和 OpenCode 需手動設定。
+> **注意：** 各平台安裝方式不同，請選擇下方對應的整合方式。
 
 ### Claude Code（插件市場）
 
@@ -56,8 +62,8 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 ## 包含內容
 
 - `op` CLI 命令參考（應用控制、文件操作、節點、匯入、佈局、頁面、變數、程式碼生成）
-- 批量設計 DSL 語法及完整落地頁範例
-- PenNode 結構 — 所有節點類型（frame、rectangle、ellipse、polygon、text、path、image、icon_font、ref、line、group）、屬性、填充
+- 批量設計 DSL 與沙箱 JavaScript 模式及完整範例
+- PenNode 結構 — v0.8.0 的所有節點類型（含互動式元件）、屬性與填充
 - 40+ 語義角色及智慧預設值
 - 設計原則 — 字體、配色、間距、陰影
 - 佈局引擎規則與尺寸決策

@@ -13,7 +13,13 @@ Segue a especificação [agentskills.io](https://agentskills.io/specification).
 Instale o CLI `op` antes de usar esta habilidade:
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# Ou no macOS / Linux:
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 Certifique-se de que uma instância do OpenPencil (app desktop ou servidor web) está em execução.
@@ -54,8 +60,8 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 ## Conteudo incluido
 
 - Referencia de comandos CLI `op` (app control, document ops, nodes, import, layout, pages, variables, codegen)
-- Sintaxe DSL de design em lote com exemplo completo de landing page
-- Schema PenNode — todos os tipos de no (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), propriedades, preenchimentos
+- DSL de design em lote e modo JavaScript isolado com exemplos completos
+- Schema PenNode — todos os tipos de nó da v0.8.0, incluindo widgets interativos, propriedades e preenchimentos
 - 40+ roles semanticos com valores padrao inteligentes
 - Principios de design — tipografia, cor, espacamento, sombras
 - Regras do motor de layout e dimensionamento

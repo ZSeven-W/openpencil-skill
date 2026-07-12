@@ -13,7 +13,13 @@
 使用前に `op` CLI をインストールしてください：
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# または macOS / Linux:
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 `op` が接続するための OpenPencil インスタンス（デスクトップアプリまたはWebサーバー）が実行中であることを確認してください。
@@ -56,8 +62,8 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 ## 含まれる内容
 
 - `op` CLI コマンドリファレンス（アプリ制御、ドキュメント操作、ノード、インポート、レイアウト、ページ、変数、コード生成）
-- バッチデザインDSL構文とランディングページの完全な例
-- PenNodeスキーマ — 全ノードタイプ（frame、rectangle、ellipse、polygon、text、path、image、icon_font、ref、line、group）、プロパティ、フィル
+- バッチデザインDSLとサンドボックスJavaScriptモードの完全な例
+- PenNodeスキーマ — インタラクティブウィジェットを含むv0.8.0の全ノードタイプ、プロパティ、フィル
 - 40以上のセマンティックロールとスマートデフォルト
 - デザイン原則 — タイポグラフィ、カラー、スペーシング、シャドウ
 - レイアウトエンジンのルールとサイジング

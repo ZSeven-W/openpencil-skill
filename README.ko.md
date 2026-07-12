@@ -13,7 +13,13 @@
 사용 전 `op` CLI를 설치하세요:
 
 ```bash
-npm install -g @zseven-w/openpencil
+brew install zseven-w/openpencil/op
+# 또는 macOS / Linux:
+curl -fsSL https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/ZSeven-W/openpencil/main/scripts/install-op.ps1 | iex
 ```
 
 `op`가 연결할 OpenPencil 인스턴스(데스크톱 앱 또는 웹 서버)가 실행 중인지 확인하세요.
@@ -54,8 +60,8 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 ## 포함 내용
 
 - `op` CLI 명령 참조 (app control, document ops, nodes, import, layout, pages, variables, codegen)
-- 배치 디자인 DSL 구문 및 전체 랜딩 페이지 예제
-- PenNode 스키마 — 모든 노드 유형 (frame, rectangle, ellipse, polygon, text, path, image, icon_font, ref, line, group), 속성, 채우기
+- 배치 디자인 DSL 및 샌드박스 JavaScript 모드의 전체 예제
+- PenNode 스키마 — 인터랙티브 위젯을 포함한 모든 v0.8.0 노드 유형, 속성, 채우기
 - 40개 이상의 시맨틱 역할과 스마트 기본값
 - 디자인 원칙 — 타이포그래피, 색상, 간격, 그림자
 - 레이아웃 엔진 규칙 및 크기 결정

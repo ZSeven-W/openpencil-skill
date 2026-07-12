@@ -17,37 +17,52 @@ Generate production-quality vector designs by writing PenNode JSON trees. Use th
 ## Quick Reference — `op` CLI
 
 ```bash
-# App control
-op start [--desktop|--web]           # Launch app
-op stop                              # Stop running instance
-op status                            # Check if running
+# App and server control
+op start [--file path.op]            # Launch the desktop editor and live MCP server
+op start --web [--host H] [--file path.op]  # Serve the browser editor and MCP
+op start --headless [--file path.op] # Run a windowless file-backed MCP server
+op stop                              # Stop the running editor / MCP server
+op status                            # Check whether MCP HTTP is reachable
+op tools                             # List every MCP tool and input schema
+
+# Skill management
+op install [--target T]              # Install openpencil-skill for detected AI agents
+op uninstall [--target T]            # Uninstall openpencil-skill
+op skill:export <skill> [--out DIR]  # Export an embedded skill
 
 # Document
 op open [file.op]                    # Open file or connect to live canvas
 op save <file.op>                    # Save current document
-op get [--depth N] [--pretty]        # Get document tree
+op get [--type T] [--name N] [--id ID] [--depth N] [--parent P]
 op selection [--depth N]             # Get current canvas selection
-op read-nodes [id...] [--depth N] [--vars]  # Read node subtree(s) with optional variable resolution
+op read-nodes [ids] [--depth N] [--vars]  # Read node subtree(s) with optional variable resolution
 op layout [--parent P] [--depth N]   # Snapshot layout tree with computed positions
 op find-space [--direction D] [--width N] [--height N]  # Find empty space on canvas
 
 # Node operations
-op insert '<json>' [--parent P]     # Insert node (--index N, --post-process)
-op update <id> '<json>'              # Update node
-op delete <id>                       # Delete node
-op move <id> <parent> [index]        # Move node
-op copy <id> <parent>                # Deep-copy node
-op replace <id> '<json>'             # Replace node
+op insert '<json>' [--parent P] [--page PAGE] [--post-process]
+op update <id> '<json>' [--page PAGE] [--post-process]
+op delete <id> [--page PAGE]
+op move <id> [--parent P] [--index N] [--page PAGE]
+op copy <id> [--parent P] [--page PAGE]
+op replace <id> '<json>' [--page PAGE] [--post-process]
 
 # Batch design
 op design '<dsl>'                    # Batch design DSL (inline, @file, or stdin) [--canvas-width N]
-op design @ui.js                     # Sandboxed JS script: I(parent, obj) + loops (.js/.mjs implies --script)
-op design '<js>' --script            # Same, inline/stdin (flag must FOLLOW the payload)
+op design @ui.js                     # Sandboxed JS: I(parent, obj) + loops (.js/.mjs implies --script)
+op design '<js>' --script            # Same in inline/stdin form; flag follows payload
 
 # Layered workflow
 op design:skeleton '<json>'          # Create section structure
 op design:content <id> '<json>'      # Populate section content
 op design:refine --root-id <id>      # Validate + auto-fix (resolves icons) [--canvas-width N]
+
+# Design-as-code conversion
+op design:upsert-vars --key K --file vars.json [--source P] [--hash H]
+op design:upsert-component --key K --name N --file node.json [--source P] [--hash H]
+op design:upsert-screen --key K --file node.json [--source P] [--hash H]
+op design:status [--kind token|component|screen]
+op design:lint [--node ID]
 
 # Import
 op import:svg <file.svg> [--parent P]       # Import SVG as editable nodes
@@ -69,13 +84,13 @@ op theme:load <file.optheme>         # Load a theme preset file
 op theme:list <directory>            # List .optheme presets in directory
 
 # Codegen pipeline
-op codegen:plan '<json>'             # Submit codegen plan (framework, rootIds, options)
-op codegen:submit '<json>'           # Submit a code chunk for a node
-op codegen:assemble [--framework F]  # Assemble all submitted chunks into final output
-op codegen:clean                     # Clear codegen state
+op codegen:plan '<json>'             # Submit plan (chunks, sharedStyles, rootLayout)
+op codegen:submit <planId> '<json>'  # Submit a code chunk for the plan
+op codegen:assemble <planId> [--framework F]  # Assemble final output
+op codegen:clean <planId>            # Clear codegen state for the plan
 ```
 
-Global flags: `--file <path>`, `--page <id>`, `--pretty`. Inputs: inline string, `@filepath`, or `-` (stdin).
+Global flags: `--port <n>`, `--file <path>`, `--page <id>`, `--pretty`. Inputs: inline string, `@filepath`, or `-` (stdin).
 
 ## Building Designs — Three Approaches
 
@@ -97,9 +112,7 @@ op design:refine --root-id "$ROOT"
 
 ### Approach 2: Batch Design DSL
 
-One operation per line. Bind results with `name=` for later reference. Best for simple, flat structures.
-
-> **Limitation:** The DSL parser cannot handle deeply nested JSON (e.g., `children` arrays with nested objects, or multiple levels of array nesting). Keep each `I()` call to a **single level of nesting**. For complex nodes with children, use separate `I()` calls for parent and children, or use `op insert --parent`.
+One operation per line. Bind results with `name=` for later reference. Nested `children` arrays are supported, but insert children separately when later operations need stable bindings for them.
 
 ```
 root=I(null, { "type": "frame", "width": 1200, "layout": "vertical" })
@@ -121,60 +134,43 @@ R(old_btn, { "type": "rectangle", "role": "button" })
 | `D` | `D(ref)` | Delete |
 | `G` | `name=G(parent, "search", "query")` | Generate image via search |
 
-**DSL safe pattern** — always insert parent and children separately:
+**Binding-friendly pattern** — insert parent and children separately when they need later references:
 
 ```
 btn=I(form, {"type":"rectangle","role":"button","width":"fill_container","height":50,"cornerRadius":12,"fill":[{"type":"solid","color":"#111111"}],"layout":"horizontal","justifyContent":"center","alignItems":"center"})
 I(btn, {"type":"text","content":"Submit","fontSize":16,"fontWeight":600,"fill":[{"type":"solid","color":"#FFFFFF"}]})
 ```
 
-### Approach 3: Script mode (loops & data-driven — RECOMMENDED for repeated structures)
+### Approach 3: Script mode (Recommended for repeated structures)
 
-```
-op design @ui.js                 # .js / .mjs file implies script mode
-op design '<js code>' --script   # inline or stdin; --script must FOLLOW the payload
-```
+Use sandboxed JavaScript when loops or data-driven repetition are clearer than repeated DSL operations:
 
-Via MCP: call `batch_design` with the `script` argument (exactly ONE of `nodes_json` | `operations` | `script` per call). This is the SAME protocol OpenPencil's internal design agents use; follow the same contract:
-
-Write a JavaScript program (no prose, no markdown fences) that builds the design by calling the global function I(parent, node):
-
-```
-const id = I(parent, { ...node... });   // inserts node, RETURNS its id (a string)
+```bash
+op design @ui.js                 # .js / .mjs implies script mode
+op design '<js code>' --script   # inline or stdin; --script follows the payload
 ```
 
-`parent` is null for a root frame, otherwise an id returned by an EARLIER I(...) call. A node is a child of X only if you call I(X, {...}).
-
-I(...) is the ONLY function available — there is no console, and no other builder. Do not call console.log or any helper; just call I(...). Script mode is insert-only; use the DSL ops (Approach 2) for update/move/delete.
-
-USE REAL JAVASCRIPT — const/let, arrays of data, and for...of / .forEach loops — to generate repeated structure (table rows, nav items, cards, list items) by looping over a data array. PREFER a loop over copy-pasting near-identical I(...) calls.
-
-Each node object starts with type ("frame"/"text"/"rectangle"/"ellipse"/"path"/"icon_font") and uses camelCase props (cornerRadius, fontSize, fontWeight, justifyContent, alignItems, clipContent). Do NOT set x/y on children inside layout frames.
-
-Example:
+Via MCP, call `batch_design` with exactly one of `nodes_json`, `operations`, or `script`. Script mode provides two recording builders:
 
 ```js
-const sec = I(null, {type:"frame", name:"Clients", layout:"vertical", width:"fill_container", gap:0});
-const tbl = I(sec, {type:"frame", layout:"vertical", width:"fill_container"});
-const rows = [{name:"Alice Chen", status:"Active"}, {name:"Bob Ito", status:"VIP"}];
-for (const r of rows) {
-  const row = I(tbl, {type:"frame", layout:"horizontal", width:"fill_container", padding:[12,16]});
-  const c1 = I(row, {type:"frame", width:"fill_container"}); I(c1, {type:"text", content:r.name});
-  const c2 = I(row, {type:"frame", width:"fill_container"}); I(c2, {type:"text", content:r.status});
+const section = I(null, {type: "frame", name: "Clients", layout: "vertical", width: "fill_container"});
+const rows = ["Alice Chen", "Bob Ito", "Sam Rivera"];
+for (const name of rows) {
+  const row = I(section, {type: "frame", layout: "horizontal", width: "fill_container", padding: [12, 16]});
+  I(row, {type: "text", content: name});
 }
+
+// Instantiate a component from an attached UI kit:
+K("shadcn/btn-primary", section, {name: "Primary Action"});
 ```
 
-Generate EVERY row/card/item with realistic values. Output ONLY the JavaScript program.
+`I(parent, node)` inserts a node and returns its remapped ID. `K(kitComponentId, parent, overrides)` instantiates a UI-kit component and also returns its remapped ID; use `starter/<id>`, `shadcn/<id>`, or `<kit-id>/<component-id>`. Use `null` for a root; otherwise pass an ID returned by an earlier recording call. `C`, `U`, `D`, `M`, `R`, `G`, and `console.*` exist only as no-op compatibility stubs in script mode; use the DSL for update, copy, replace, move, delete, or image-search operations.
 
-CLI/MCP notes:
-
-- **Nested `children` arrays are SAFE here** — the engine serializes each object to perfect single-line JSON, so the DSL's single-level-of-nesting limitation does not apply. Prefer separate `I()` calls anyway when you need the parent binding.
-- **Node ids are remapped on insert** — do not reference an authored `"id"` after the call; only the returned binding is meaningful, and only inside this script.
-- **Limits:** 256 KiB source, 4096 inserts, 8 MiB recorded output, 2 s CPU, 64 MiB memory. A script truncated mid-statement is best-effort repaired (the complete prefix still runs).
+Nested `children` arrays are safe in script mode. Limits are 256 KiB source, 4096 recorded operations, 8 MiB recorded output, 2 seconds of wall-clock evaluation, and 64 MiB of memory.
 
 ## STRICT JSON Rules
 
-When emitting PenNode JSON (via `op insert`, `op design`, `batch_design`, `insert_node`), you MUST produce strictly valid JSON. Common mistakes that break parsing:
+When emitting PenNode JSON (via `op insert`, the batch DSL, `nodes_json`, or `insert_node`), you MUST produce strictly valid JSON. Script mode uses JavaScript object literals instead. Common mistakes that break JSON parsing:
 
 - **Every property MUST have both a key and a value**. NEVER emit `": 50` or `: 50` without a key name. This often happens when you truncate/reformat — double-check.
 - **Every key MUST be a double-quoted non-empty string.**
@@ -193,7 +189,7 @@ When emitting PenNode JSON (via `op insert`, `op design`, `batch_design`, `inser
 
 ```json
 {
-  "type": "frame|rectangle|text|ellipse|line|polygon|path|image|icon_font|group|ref",
+  "type": "frame|group|rectangle|ellipse|polygon|line|text|path|text_input|text_area|select|switch|checkbox|slider|radio_group|number_input|progress|tabs|image|icon_font|ref",
   "name": "Display Name",
   "role": "semantic-role",
   "x": 0, "y": 0,
@@ -435,22 +431,47 @@ For incremental, framework-aware code generation from the design tree:
 
 | Step | CLI Command | MCP Tool | Description |
 |------|------------|----------|-------------|
-| 1. Plan | `op codegen:plan '<json>'` | `codegen_plan` | Declare framework, root node IDs, and options |
-| 2. Submit | `op codegen:submit '<json>'` | `codegen_submit_chunk` | Submit generated code for individual nodes |
-| 3. Assemble | `op codegen:assemble --framework react` | `codegen_assemble` | Combine all chunks into the final output |
-| 4. Clean | `op codegen:clean` | `codegen_clean` | Clear server-side codegen state |
+| 1. Plan | `op codegen:plan '<json>'` | `codegen_plan` | Declare chunks, dependencies, shared styles, and root layout |
+| 2. Submit | `op codegen:submit <planId> '<json>'` | `codegen_submit_chunk` | Submit generated code for individual nodes |
+| 3. Assemble | `op codegen:assemble <planId> --framework react` | `codegen_assemble` | Combine all chunks into the final output |
+| 4. Clean | `op codegen:clean <planId>` | `codegen_clean` | Clear server-side codegen state |
+
+`codegen:plan` returns a `planId`; pass that value to every submit, assemble, and clean command in the same pipeline.
 
 The plan JSON shape:
 ```json
-{ "framework": "react", "rootIds": ["frame-1"], "options": { "tailwind": true } }
+{
+  "chunks": [{
+    "id": "root",
+    "name": "Root",
+    "nodeIds": ["frame-1"],
+    "role": "root",
+    "suggestedComponentName": "Root",
+    "dependencies": []
+  }],
+  "sharedStyles": [],
+  "rootLayout": { "direction": "column", "gap": 0, "responsive": true }
+}
 ```
 
 The submit JSON shape:
 ```json
-{ "nodeId": "card-1", "code": "<Card className=\"...\">...</Card>", "imports": ["Card"] }
+{
+  "chunkId": "root",
+  "code": "export function Root() { return <main />; }",
+  "contract": {
+    "chunkId": "root",
+    "componentName": "Root",
+    "exportedProps": [],
+    "slots": [],
+    "cssClasses": [],
+    "cssVariables": [],
+    "imports": []
+  }
+}
 ```
 
-Supported frameworks: `react`, `html`, `vue`, `svelte`, `flutter`, `swiftui`, `compose`, `rn` (React Native), `css`.
+Supported frameworks: `react`, `html`, `vue`, `svelte`, `flutter`, `swiftui`, `compose`, `react-native`.
 
 ## Multi-Page Documents
 
@@ -463,7 +484,7 @@ op page reorder <page-id> 2           # Move page to index 2
 op page duplicate <page-id>           # Clone page with new IDs
 ```
 
-Use `--page <id>` on any command to target a specific page. Without it, commands operate on the first page.
+Use `--page <id>` on any command to target a specific page. Most commands otherwise use the active page; `codegen:plan` is the exception and defaults to the first page.
 
 ## Common Patterns
 
@@ -542,7 +563,7 @@ op insert --parent "$COL2" '{"type":"text","content":"Pricing","fontSize":14,"fi
 | Negative letterSpacing on CJK | Always 0 for CJK text |
 | Missing post-process after insert | Run `op design:refine --root-id <id>` after building the tree |
 | Icons inserted but not visible | Path nodes need `design:refine` or `--post-process` to resolve SVG |
-| Using DSL `I()` with inline `children` | DSL parser fails on nested JSON — insert parent and children separately |
+| Cannot reference an inline child later | Insert it with a separate bound `I()` call |
 | Missing `postProcess: true` in MCP | Always set for MCP tool calls |
 
 ## Full Example — `op insert` Workflow (Recommended)
@@ -582,7 +603,7 @@ op design:refine --root-id "$ROOT"
 
 ## DSL Example — Landing Page
 
-DSL is suitable for simpler structures. **Avoid inline `children`** — insert parent and children as separate operations.
+DSL is suitable for operation-oriented edits. Separate parent and child operations provide bindings for later updates and copies.
 
 ```
 root=I(null, {"type":"frame","name":"Landing","width":1200,"height":0,"layout":"vertical","fill":[{"type":"solid","color":"#FFFFFF"}]})
