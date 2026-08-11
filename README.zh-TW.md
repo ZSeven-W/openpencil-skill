@@ -61,15 +61,17 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 
 ## 包含內容
 
-- `op` CLI 命令參考（應用控制、文件操作、節點、匯入、佈局、頁面、變數、程式碼生成）
+- `op` CLI 命令參考（應用控制、文件操作、節點、匯入、匯出、範本、佈局、頁面、變數、程式碼生成）
 - 批量設計 DSL 與沙箱 JavaScript 模式及完整範例
-- PenNode 結構 — v0.8.0 的所有節點類型（含互動式元件）、屬性與填充
+- PenNode 結構 — v0.8.4 的所有節點類型（含互動式元件）、屬性與填充
 - 40+ 語義角色及智慧預設值
 - 設計原則 — 字體、配色、間距、陰影
 - 佈局引擎規則與尺寸決策
 - 分層 MCP 工作流（skeleton → content → refine）
 - 程式碼生成管線（plan → submit → assemble → clean）
-- 匯入支援（SVG、Figma .fig 檔案）
+- 匯入支援（SVG、HTML 頁面與線上網址、網頁擷取快照、Figma .fig 檔案）
+- 匯出與交付 — 圖片、PDF 及簡報（PowerPoint、自包含 HTML）
+- 場景範本與樣式資產，含你自行匯入的 DESIGN.md 指南
 - 常用模式 — 導覽列、英雄區、卡片、表單、頁尾
 - 常見錯誤表
 

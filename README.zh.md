@@ -81,15 +81,17 @@ gemini extensions update openpencil-skill
 
 ## 包含内容
 
-- `op` CLI 命令参考（应用控制、文档操作、节点、导入、布局、页面、变量、代码生成）
+- `op` CLI 命令参考（应用控制、文档操作、节点、导入、导出、模板、布局、页面、变量、代码生成）
 - 批量设计 DSL、沙箱 JavaScript 模式及完整示例
-- PenNode 模式 — v0.8.0 的所有节点类型（含交互式组件）、属性和填充
+- PenNode 模式 — v0.8.4 的所有节点类型（含交互式组件）、属性和填充
 - 40+ 语义角色及智能默认值
 - 设计原则 — 字体、配色、间距、阴影
 - 布局引擎规则与尺寸决策
 - 分层 MCP 工作流（skeleton → content → refine）
 - 代码生成流水线（plan → submit → assemble → clean）
-- 导入支持（SVG、Figma .fig 文件）
+- 导入支持（SVG、HTML 页面与在线网址、网页抓取快照、Figma .fig 文件）
+- 导出与交付 — 图片、PDF 及演示文稿（PowerPoint、自包含 HTML）
+- 场景模板与样式资产，含你自己导入的 DESIGN.md 指南
 - 常用模式 — 导航栏、英雄区、卡片、表单、页脚
 - 常见错误表
 

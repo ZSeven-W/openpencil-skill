@@ -9,7 +9,7 @@
     {
       "name": "openpencil-skill",
       "description": "Design skill for OpenPencil — op CLI, batch DSL, MCP tools, PenNode schema, and UI design best practices",
-      "version": "0.8.0",
+      "version": "0.8.4",
       "source": "./",
       "author": {
         "name": "ZSeven-W",

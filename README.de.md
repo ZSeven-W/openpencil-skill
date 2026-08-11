@@ -59,15 +59,17 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 
 ## Enthaltene Inhalte
 
-- `op` CLI-Befehlsreferenz (app control, document ops, nodes, import, layout, pages, variables, codegen)
+- `op` CLI-Befehlsreferenz (app control, document ops, nodes, import, export, templates, layout, pages, variables, codegen)
 - Batch-Design-DSL und Sandbox-JavaScript-Modus mit vollständigen Beispielen
-- PenNode-Schema — alle v0.8.0-Knotentypen einschließlich interaktiver Widgets, Eigenschaften und Füllungen
+- PenNode-Schema — alle v0.8.4-Knotentypen einschließlich interaktiver Widgets, Eigenschaften und Füllungen
 - 40+ semantische Rollen mit intelligenten Standardwerten
 - Designprinzipien — Typografie, Farbe, Abstände, Schatten
 - Layout-Engine-Regeln und Größenbestimmung
 - Schichtbasierter MCP-Workflow (skeleton → content → refine)
 - Codegen-Pipeline (plan → submit → assemble → clean)
-- Import-Unterstützung (SVG, Figma .fig-Dateien)
+- Import-Unterstützung (SVG, HTML-Seiten und Live-URLs, Web-Snapshots, Figma .fig-Dateien)
+- Export und Auslieferung — Bilder, PDF und Präsentationen (PowerPoint, eigenständiges HTML)
+- Szenenvorlagen und Stil-Assets, einschließlich importierter DESIGN.md-Guides
 - Gängige Muster — Navigation, Hero, Karten, Formulare, Footer
 - Tabelle häufiger Fehler
 

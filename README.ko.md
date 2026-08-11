@@ -59,15 +59,17 @@ gemini extensions install https://github.com/zseven-w/openpencil-skill
 
 ## 포함 내용
 
-- `op` CLI 명령 참조 (app control, document ops, nodes, import, layout, pages, variables, codegen)
+- `op` CLI 명령 참조 (app control, document ops, nodes, import, export, templates, layout, pages, variables, codegen)
 - 배치 디자인 DSL 및 샌드박스 JavaScript 모드의 전체 예제
-- PenNode 스키마 — 인터랙티브 위젯을 포함한 모든 v0.8.0 노드 유형, 속성, 채우기
+- PenNode 스키마 — 인터랙티브 위젯을 포함한 모든 v0.8.4 노드 유형, 속성, 채우기
 - 40개 이상의 시맨틱 역할과 스마트 기본값
 - 디자인 원칙 — 타이포그래피, 색상, 간격, 그림자
 - 레이아웃 엔진 규칙 및 크기 결정
 - 계층형 MCP 워크플로 (skeleton → content → refine)
 - 코드 생성 파이프라인 (plan → submit → assemble → clean)
-- 가져오기 지원 (SVG, Figma .fig 파일)
+- 가져오기 지원 (SVG, HTML 페이지 및 라이브 URL, 웹 캡처 스냅샷, Figma .fig 파일)
+- 내보내기 및 전달 — 이미지, PDF, 프레젠테이션 덱 (PowerPoint, 자체 포함 HTML)
+- 장면 템플릿과 스타일 에셋 (가져온 DESIGN.md 가이드 포함)
 - 일반 패턴 — 내비바, 히어로, 카드, 폼, 푸터
 - 일반적인 실수 표
 
