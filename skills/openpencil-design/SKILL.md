@@ -64,8 +64,25 @@ op design:upsert-screen --key K --file node.json [--source P] [--hash H]
 op design:status [--kind token|component|screen]
 op design:lint [--node ID]
 
+# Templates & style assets
+op templates [--scene S] [--tag T]   # List shipped scene templates (incl. 16:9 decks)
+op use-template <id>                 # Start from a template: takes over a blank
+                                     #   starter page, otherwise appends its boards
+op styles [<id>] [--tag T] [--platform P]   # List style guides: shipped corpus +
+                                     #   your imported DESIGN.md files; a bare id
+                                     #   prints that guide's markdown
+
+# Export & delivery
+op export [--item ID|--selection] --output PATH [--format png|jpeg|webp|pdf] [--scale N]
+op export-deck --output PATH [--format pptx|html|pdf]   # Active page's boards as a deck
+op export-frames --output-dir DIR [--format png|jpeg|webp]  # One image per top-level frame
+
 # Import
 op import:svg <file.svg> [--parent P]       # Import SVG as editable nodes
+op import:html <file.html|url> [--parent P] [--viewport-height N] [--out out.op]
+                                     # Import a page or live URL as nodes
+op import:snapshot <snapshot.json> [--parent P] [--out out.op]
+                                     # Import a web-capture snapshot
 op import:figma <file.fig> [--out out.op]   # Convert Figma .fig to .op document
 
 # Pages
@@ -424,6 +441,45 @@ For complex multi-section pages, use the three-step skeleton → content → ref
 | 3. Validate + auto-fix | `design_refine` | `op design:refine --root-id <id>` |
 
 `design:refine` resolves icon names → SVG paths, fixes layout issues, and validates the tree. **Always run as the final step.**
+
+## Starting From a Template
+
+Starting from a blank frame is rarely the fastest route. `op templates` lists
+the shipped catalogue — tutorials, comparisons, carousels and the 16:9
+presentation decks — and `op use-template <id>` brings one in: it takes over an
+untouched starter page, and appends its boards to the right of anything else.
+The template carries its own palette, so the boards resolve against real
+variables rather than hard-coded colours.
+
+`op styles` lists the style guides available to pin, including any `DESIGN.md`
+the user imported. Prefer the user's own guide when one exists — it is the
+material they chose.
+
+| Step | MCP Tool | CLI Equivalent |
+|------|----------|----------------|
+| Browse templates | `list_scene_templates` | `op templates [--scene S] [--tag T]` |
+| Start from one | `use_scene_template` | `op use-template <id>` |
+| Browse style assets | `list_style_guides` | `op styles [<id>]` |
+
+## Delivering the Result
+
+A design the user cannot open is not finished. Export it rather than describing
+what you would export.
+
+| Goal | MCP Tool | CLI Equivalent |
+|------|----------|----------------|
+| One node / page / selection | `export_item`, `export_nodes` | `op export --output PATH --format png\|pdf` |
+| A presentation deck | `export_deck` | `op export-deck --output PATH --format pptx\|html\|pdf` |
+| Every frame on the page | `export_frames` | `op export-frames --output-dir DIR` |
+| Check a deck before writing it | `get_deck_boards` | — |
+
+For decks, `pptx` is editable PowerPoint and the right default; `html` is one
+self-contained file; `pdf` is one page per slide. Hidden boards are skipped by
+design.
+
+**The destination argument is `outputPath` / `outputDir`, never `filePath`.**
+`filePath` means "the `.op` document this call targets" everywhere in this API,
+so using it for a destination sends the call at a document that does not exist.
 
 ## Codegen Pipeline
 
